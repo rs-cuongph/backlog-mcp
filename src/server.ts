@@ -7,6 +7,10 @@ import { config } from "./config.js";
 import { handleGetIssueList } from "./tools/get-issue-list.js";
 import { handleGetIssue } from "./tools/get-issue.js";
 import { handleGetComments } from "./tools/get-comments.js";
+import { handleGetStatuses } from "./tools/get-statuses.js";
+import { handleGetPriorities } from "./tools/get-priorities.js";
+import { handleGetCategories } from "./tools/get-categories.js";
+import { handleGetMilestones } from "./tools/get-milestones.js";
 
 // ---------------------------------------------------------------------------
 // MCP server factory
@@ -167,6 +171,81 @@ PAGINATION: Use minId/maxId to page through comments:
     },
     async (input) => {
       return handleGetComments(input, config);
+    }
+  );
+
+  // ── Tool: backlog_get_statuses ────────────────────────────────────────────
+  server.tool(
+    "backlog_get_statuses",
+    `Fetch all statuses defined for a Backlog project.
+
+Returns each status with its ID, name, and color.
+Use the IDs to filter issues via backlog_get_issue_list (statusId param).`,
+    {
+      projectIdOrKey: z
+        .string()
+        .min(1)
+        .describe("Project key (e.g. MYPROJ) or numeric project ID"),
+    },
+    async (input) => {
+      return handleGetStatuses(input, config);
+    }
+  );
+
+  // ── Tool: backlog_get_priorities ─────────────────────────────────────────
+  server.tool(
+    "backlog_get_priorities",
+    `Fetch the global list of issue priorities for this Backlog space.
+
+Priorities are space-wide (not project-specific).
+Returns each priority with its ID and name.
+Use the IDs to filter issues via backlog_get_issue_list (priorityId param).`,
+    {},
+    async (input) => {
+      return handleGetPriorities(input, config);
+    }
+  );
+
+  // ── Tool: backlog_get_categories ─────────────────────────────────────────
+  server.tool(
+    "backlog_get_categories",
+    `Fetch all categories defined for a Backlog project.
+
+Returns each category with its ID and name.
+Use the IDs to filter issues via backlog_get_issue_list (categoryId param).`,
+    {
+      projectIdOrKey: z
+        .string()
+        .min(1)
+        .describe("Project key (e.g. MYPROJ) or numeric project ID"),
+    },
+    async (input) => {
+      return handleGetCategories(input, config);
+    }
+  );
+
+  // ── Tool: backlog_get_milestones ─────────────────────────────────────────
+  server.tool(
+    "backlog_get_milestones",
+    `Fetch milestones (versions) for a Backlog project.
+
+Returns each milestone with its ID, name, start date, due date, and archived flag.
+By default, only active (non-archived) milestones are returned.
+Set archived=true to include all milestones.
+Use the IDs to filter issues via backlog_get_issue_list (milestoneId param).`,
+    {
+      projectIdOrKey: z
+        .string()
+        .min(1)
+        .describe("Project key (e.g. MYPROJ) or numeric project ID"),
+      archived: z
+        .boolean()
+        .optional()
+        .default(false)
+        .describe("Include archived milestones. Default: false (active only)"),
+    },
+    async (input) => {
+      return handleGetMilestones(input, config);
     }
   );
 

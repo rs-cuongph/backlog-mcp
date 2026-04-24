@@ -3,11 +3,38 @@ import {
   issueListUrl,
   issueUrl,
   commentsUrl,
+  projectStatusesUrl,
+  prioritiesUrl,
+  projectCategoriesUrl,
+  projectVersionsUrl,
 } from "./endpoints.js";
-import { mapIssue, mapIssueSummary, mapComment } from "./mappers.js";
+import {
+  mapIssue,
+  mapIssueSummary,
+  mapComment,
+  mapStatus,
+  mapPriority,
+  mapCategory,
+  mapMilestone,
+} from "./mappers.js";
 import { backlogHttpError, backlogResponseError } from "../errors.js";
-import type { BacklogRawIssue, BacklogRawComment } from "../types/backlog-api.js";
-import type { BacklogIssue, BacklogIssueSummary, BacklogComment } from "../types.js";
+import type {
+  BacklogRawIssue,
+  BacklogRawComment,
+  BacklogRawStatus,
+  BacklogRawPriority,
+  BacklogRawCategory,
+  BacklogRawMilestone,
+} from "../types/backlog-api.js";
+import type {
+  BacklogIssue,
+  BacklogIssueSummary,
+  BacklogComment,
+  BacklogStatus,
+  BacklogPriority,
+  BacklogCategory,
+  BacklogMilestone,
+} from "../types.js";
 
 // ---------------------------------------------------------------------------
 // Input param shapes
@@ -139,6 +166,67 @@ export class BacklogHttpClient {
     }
 
     return (res.data as BacklogRawComment[]).map(mapComment);
+  }
+
+  // ---------------------------------------------------------------------------
+  // backlog_get_statuses
+  // ---------------------------------------------------------------------------
+
+  async getStatuses(projectIdOrKey: string): Promise<BacklogStatus[]> {
+    const url = projectStatusesUrl(this.baseUrl, projectIdOrKey);
+    const res = await this.http.get(url);
+    this.assertOk(res.status, url, res.data);
+    if (!Array.isArray(res.data)) {
+      throw backlogResponseError("Expected array response from GET /statuses", res.data);
+    }
+    return (res.data as BacklogRawStatus[]).map(mapStatus);
+  }
+
+  // ---------------------------------------------------------------------------
+  // backlog_get_priorities
+  // ---------------------------------------------------------------------------
+
+  async getPriorities(): Promise<BacklogPriority[]> {
+    const url = prioritiesUrl(this.baseUrl);
+    const res = await this.http.get(url);
+    this.assertOk(res.status, url, res.data);
+    if (!Array.isArray(res.data)) {
+      throw backlogResponseError("Expected array response from GET /priorities", res.data);
+    }
+    return (res.data as BacklogRawPriority[]).map(mapPriority);
+  }
+
+  // ---------------------------------------------------------------------------
+  // backlog_get_categories
+  // ---------------------------------------------------------------------------
+
+  async getCategories(projectIdOrKey: string): Promise<BacklogCategory[]> {
+    const url = projectCategoriesUrl(this.baseUrl, projectIdOrKey);
+    const res = await this.http.get(url);
+    this.assertOk(res.status, url, res.data);
+    if (!Array.isArray(res.data)) {
+      throw backlogResponseError("Expected array response from GET /categories", res.data);
+    }
+    return (res.data as BacklogRawCategory[]).map(mapCategory);
+  }
+
+  // ---------------------------------------------------------------------------
+  // backlog_get_milestones
+  // ---------------------------------------------------------------------------
+
+  async getMilestones(
+    projectIdOrKey: string,
+    archived?: boolean
+  ): Promise<BacklogMilestone[]> {
+    const url = projectVersionsUrl(this.baseUrl, projectIdOrKey);
+    const queryParams: Record<string, unknown> = {};
+    if (archived != null) queryParams["archived"] = archived;
+    const res = await this.http.get(url, { params: queryParams });
+    this.assertOk(res.status, url, res.data);
+    if (!Array.isArray(res.data)) {
+      throw backlogResponseError("Expected array response from GET /versions", res.data);
+    }
+    return (res.data as BacklogRawMilestone[]).map(mapMilestone);
   }
 
   // ---------------------------------------------------------------------------

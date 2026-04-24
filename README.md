@@ -16,6 +16,10 @@ An MCP (Model Context Protocol) server for Backlog (Nulab), providing AI agents 
 - 🔎 `backlog_get_issue_list` — list issues with rich filtering (project, status, priority, assignee, keyword, etc.)
 - 🔍 `backlog_get_issue` — fetch a single issue's full details
 - 💬 `backlog_get_comments` — fetch issue comments with changelog entries
+- 🏷️ `backlog_get_statuses` — list all statuses in a project (with IDs for filtering)
+- ⚡ `backlog_get_priorities` — list global issue priorities (with IDs for filtering)
+- 📂 `backlog_get_categories` — list all categories in a project (with IDs for filtering)
+- 🎯 `backlog_get_milestones` — list milestones/versions in a project (with IDs for filtering)
 
 ## Requirements
 
@@ -111,6 +115,56 @@ Fetch comments for a Backlog issue.
 
 ---
 
+### `backlog_get_statuses`
+
+Fetch all statuses defined for a Backlog project.
+
+**Input:**
+| Field | Type | Description |
+|---|---|---|
+| `projectIdOrKey` | `string` | Project key (e.g. `MYPROJ`) or numeric project ID |
+
+**Output:** Table of statuses with ID, name, and color. Use IDs in `statusId` filter of `backlog_get_issue_list`.
+
+---
+
+### `backlog_get_priorities`
+
+Fetch the global list of issue priorities (space-wide, not project-specific).
+
+**Input:** None required.
+
+**Output:** Table of priorities with ID and name. Use IDs in `priorityId` filter of `backlog_get_issue_list`.
+
+---
+
+### `backlog_get_categories`
+
+Fetch all categories defined for a Backlog project.
+
+**Input:**
+| Field | Type | Description |
+|---|---|---|
+| `projectIdOrKey` | `string` | Project key (e.g. `MYPROJ`) or numeric project ID |
+
+**Output:** Table of categories with ID and name. Use IDs in `categoryId` filter of `backlog_get_issue_list`.
+
+---
+
+### `backlog_get_milestones`
+
+Fetch milestones (versions) for a Backlog project.
+
+**Input:**
+| Field | Type | Description |
+|---|---|---|
+| `projectIdOrKey` | `string` | Project key (e.g. `MYPROJ`) or numeric project ID |
+| `archived` | `boolean` | Include archived milestones (default: `false`) |
+
+**Output:** Table of milestones with ID, name, start date, due date, and archived flag. Use IDs in `milestoneId` filter of `backlog_get_issue_list`.
+
+---
+
 ## Project Structure
 
 ```
@@ -129,7 +183,11 @@ src/
 ├── tools/
 │   ├── get-issue-list.ts    # backlog_get_issue_list handler
 │   ├── get-issue.ts         # backlog_get_issue handler
-│   └── get-comments.ts      # backlog_get_comments handler
+│   ├── get-comments.ts      # backlog_get_comments handler
+│   ├── get-statuses.ts      # backlog_get_statuses handler
+│   ├── get-priorities.ts    # backlog_get_priorities handler
+│   ├── get-categories.ts    # backlog_get_categories handler
+│   └── get-milestones.ts    # backlog_get_milestones handler
 └── tests/                   # Unit tests (Vitest)
 ```
 

@@ -80,6 +80,30 @@
 - **Output:** Markdown list of comments with author, date, text, and field changes.
 - **Docs:** `docs/tools/backlog_get_comments.md`
 
+### `backlog_get_statuses`
+- **Purpose:** Fetch all statuses defined for a project. Use IDs to filter `backlog_get_issue_list`.
+- **Input:** `{ projectIdOrKey: string }`
+- **Output:** Markdown table with ID, name, color per status.
+- **Docs:** `docs/tools/backlog_get_statuses.md`
+
+### `backlog_get_priorities`
+- **Purpose:** Fetch global issue priorities (space-wide, not project-specific). Use IDs to filter `backlog_get_issue_list`.
+- **Input:** _(none)_
+- **Output:** Markdown table with ID and name per priority.
+- **Docs:** `docs/tools/backlog_get_priorities.md`
+
+### `backlog_get_categories`
+- **Purpose:** Fetch all categories defined for a project. Use IDs to filter `backlog_get_issue_list`.
+- **Input:** `{ projectIdOrKey: string }`
+- **Output:** Markdown table with ID and name per category.
+- **Docs:** `docs/tools/backlog_get_categories.md`
+
+### `backlog_get_milestones`
+- **Purpose:** Fetch milestones (versions) for a project. Use IDs to filter `backlog_get_issue_list`.
+- **Input:** `{ projectIdOrKey: string, archived?: boolean }` — `archived` defaults to `false` (active only).
+- **Output:** Markdown table with ID, name, start date, due date, archived flag.
+- **Docs:** `docs/tools/backlog_get_milestones.md`
+
 ## Adding a New Tool
 
 1. Create `src/tools/<name>.ts` — export a Zod schema + async handler.
