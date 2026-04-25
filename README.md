@@ -5,8 +5,7 @@ An MCP (Model Context Protocol) server for Backlog (Nulab), providing AI agents 
 ## Stack
 
 - **TypeScript** — strict, ESM (NodeNext)
-- **@modelcontextprotocol/sdk** — MCP server + Streamable HTTP transport
-- **Express** — HTTP layer for the MCP endpoint
+- **@modelcontextprotocol/sdk** — MCP server + stdio transport
 - **Zod** — config and tool input validation
 - **Axios** — Backlog REST API HTTP client
 
@@ -32,11 +31,67 @@ An MCP (Model Context Protocol) server for Backlog (Nulab), providing AI agents 
 - A Backlog space with API access
 - A Backlog API Key (generate at **Account Settings → API → Register API key**)
 
-## Setup
+---
 
-### 1. Install dependencies
+## Quick Start (End Users)
+
+> No cloning or building required. Uses `npx` directly — the MCP client spawns and manages the process automatically via stdio.
+
+### Step 1 — Add to your MCP client
+
+#### Cursor
+
+Edit `~/.cursor/mcp.json` (global) or `.cursor/mcp.json` in your project:
+
+```json
+{
+  "mcpServers": {
+    "backlog": {
+      "command": "npx",
+      "args": ["-y", "@cuongph.dev/backlog-mcp"],
+      "env": {
+        "BACKLOG_BASE_URL": "https://yourspace.backlog.com",
+        "BACKLOG_API_KEY": "your_api_key_here"
+      }
+    }
+  }
+}
+```
+
+#### Claude Desktop
+
+Edit `~/Library/Application Support/Claude/claude_desktop_config.json`:
+
+```json
+{
+  "mcpServers": {
+    "backlog": {
+      "command": "npx",
+      "args": ["-y", "@cuongph.dev/backlog-mcp"],
+      "env": {
+        "BACKLOG_BASE_URL": "https://yourspace.backlog.com",
+        "BACKLOG_API_KEY": "your_api_key_here"
+      }
+    }
+  }
+}
+```
+
+> **Tip:** You can omit the `env` block and place the variables in a `.env` file at your working directory instead. `dotenv` is loaded automatically at startup.
+
+Restart your MCP client after saving the config. No separate server process needed — the client spawns and manages it automatically.
+
+---
+
+## Development Setup
+
+> For contributors and developers working on the source code.
+
+### 1. Clone and install
 
 ```bash
+git clone <repo-url>
+cd backlog-mcp
 npm install
 ```
 
@@ -46,23 +101,37 @@ npm install
 cp .env.example .env
 ```
 
-Edit `.env` and set your Backlog space URL and API Key:
+Edit `.env`:
 
 ```env
 BACKLOG_BASE_URL=https://yourspace.backlog.com
 BACKLOG_API_KEY=your_api_key_here
 ```
 
-### 3. Start the MCP server
+### 3. Add to MCP client (local build)
+
+First build the project:
 
 ```bash
-npm run dev
+npm run build
 ```
 
-The server will be available at:
+Then use the local `dist/server.js` in your MCP config:
 
-- **MCP endpoint:** `http://localhost:3100/mcp`
-- **Health check:** `http://localhost:3100/health`
+**Cursor** (`~/.cursor/mcp.json`):
+
+```json
+{
+  "mcpServers": {
+    "backlog": {
+      "command": "node",
+      "args": ["/absolute/path/to/backlog-mcp/dist/server.js"]
+    }
+  }
+}
+```
+
+> The `.env` file in the project root is loaded automatically — no need to duplicate env vars in the MCP config.
 
 ## Agent Summary Prompt
 
@@ -229,7 +298,7 @@ src/
 └── tests/                   # Unit tests (Vitest)
 ```
 
-## Development
+## Development Commands
 
 ```bash
 # Type check (no emit)
@@ -246,21 +315,6 @@ npm run build
 
 # Run dev server
 npm run dev
-```
-
-## Integrating with Claude Desktop
-
-Add to `~/Library/Application Support/Claude/claude_desktop_config.json`:
-
-```json
-{
-  "mcpServers": {
-    "backlog": {
-      "type": "http",
-      "url": "http://localhost:3100/mcp"
-    }
-  }
-}
 ```
 
 ## Error Codes
