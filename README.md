@@ -68,6 +68,8 @@ The server will be available at:
 
 After exporting an issue with `backlog_export_issue_context`, use `docs/prompts/backlog_issue_summary.md` as the agent prompt template for summarizing task intent, comments, attachments, inferred acceptance criteria, and optional code context.
 
+For Backlog-to-Jira migration, use `docs/prompts/backlog_to_jira_migration.md`. It keeps Jira description short, posts raw Backlog context, Vietnamese translation, and Vietnamese analysis as separate Jira comments, and uploads matching markdown files with clear names.
+
 ## MCP Tools
 
 ### `backlog_get_issue_list`
