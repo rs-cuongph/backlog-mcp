@@ -1,5 +1,5 @@
 {
-  "name": "@cuongph.dev.work/backlog-mcp",
+  "name": "@cuongph.dev/backlog-mcp",
   "version": "0.1.0",
   "description": "MCP server for Backlog (Nulab) — read issues, comments, attachments via API Key",
   "type": "module",
