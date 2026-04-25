@@ -26,15 +26,18 @@ Inputs:
    - `backlog-<ISSUE_KEY>-translation-vi.md`
    - `backlog-<ISSUE_KEY>-analysis-vi.md`
    - `backlog-<ISSUE_KEY>-manifest.json`
-5. Create the Jira issue.
-6. Upload files and Backlog attachments to Jira.
-7. Build an attachment mapping from local Backlog attachment names/paths/ids to Jira attachment filenames or URLs.
-8. Rewrite inline attachment references in raw, translation, and analysis before posting comments.
-9. Add Jira comments in this order:
+5. If Jira search is available, search for an existing Jira issue with source marker `Backlog <ISSUE_KEY>` or title `[Backlog <ISSUE_KEY>]`. If a likely duplicate exists, ask the user whether to update the existing issue or create a new one.
+6. Prepare a preview containing Jira target, title, short description, comment plan, upload file list, original attachment list, and warnings.
+7. Ask for confirmation before creating Jira unless the user explicitly requested immediate creation, such as "tạo luôn", "create now", or "no need to confirm".
+8. Create the Jira issue.
+9. Upload files and Backlog attachments to Jira.
+10. Build an attachment mapping from local Backlog attachment names/paths/ids to Jira attachment filenames or URLs.
+11. Rewrite inline attachment references in raw, translation, and analysis before posting comments.
+12. Add Jira comments in this order:
    - `[RAW]`
    - `[VI]`
    - `[ANALYSIS]`
-10. Return the Jira key/link, uploaded files, and warnings.
+13. Return the Jira key/link, uploaded files, attachment mapping, created comments, partial failures, and warnings.
 
 Do not paste local filesystem paths into Jira comments. Replace local paths with Jira attachment references after upload. If the Jira MCP returns attachment URLs, use those URLs. If it only confirms upload without URLs, reference the uploaded filename exactly.
 
@@ -47,6 +50,15 @@ Use available Jira MCP tools for:
 - Add attachment.
 
 If exact tool names are unknown, inspect/list available Jira MCP tools first. Do not proceed if create issue, add comment, or add attachment capability is missing.
+
+## Jira Body Format
+
+Do not assume Jira accepts Markdown. Before creating the issue or comments, inspect the Jira MCP tool schema/descriptions:
+
+- If the Jira MCP accepts plain text or Markdown, send the Markdown bodies from this template.
+- If the Jira MCP requires Atlassian Document Format (ADF), convert each body into the supported ADF shape before calling the tool.
+- If the Jira MCP says it auto-converts Markdown/plain text, pass Markdown and rely on the tool conversion.
+- If the accepted format is unclear, ask the user or stop before creating Jira.
 
 ## Jira Title Format
 
@@ -102,6 +114,22 @@ Raw Backlog context is attached as:
 - Original Backlog attachments uploaded to Jira with `backlog-<ISSUE_KEY>-attachment-<ATTACHMENT_ID>-<FILENAME>` naming.
 ```
 
+If the raw content is too large for a readable Jira comment or may exceed Jira/MCP limits, do not paste the full raw body. Use this compact form instead:
+
+```md
+# [RAW] Backlog <ISSUE_KEY>
+
+Raw Backlog context is attached as:
+
+`backlog-<ISSUE_KEY>-raw.md`
+
+## Raw Excerpt
+<short excerpt with the most important source metadata>
+
+## Full Raw
+See attachment `backlog-<ISSUE_KEY>-raw.md`.
+```
+
 ## Comment 2: Vietnamese Translation
 
 Translate content into Vietnamese. Do not add analysis in this comment.
@@ -120,6 +148,8 @@ Translate content into Vietnamese. Do not add analysis in this comment.
   - Nội dung đã dịch.
   - Placement confidence: exact / inferred / unmatched.
 ```
+
+If the translation is too large for a readable Jira comment or may exceed Jira/MCP limits, post a compact translation index and attach the full file `backlog-<ISSUE_KEY>-translation-vi.md`.
 
 ## Comment 3: Analysis
 
@@ -172,6 +202,33 @@ backlog-<ISSUE_KEY>-manifest.json
 backlog-<ISSUE_KEY>-attachment-<ATTACHMENT_ID>-<SANITIZED_ORIGINAL_FILENAME>
 ```
 
+## Attachment Mapping Audit
+
+After upload, maintain an audit table:
+
+```md
+| Backlog ID | Original Filename | Local Path | Jira Filename | Jira URL / Reference | Mapping Confidence |
+|---:|---|---|---|---|---|
+```
+
+Mapping rules:
+
+- Prefer Jira attachment URL/id if returned by the Jira MCP.
+- Otherwise use the deterministic uploaded filename.
+- If Jira renames or deduplicates a file and the final name is unknown, mark mapping confidence as `uncertain` and warn the user.
+- Include the mapping table in the final response and, if useful, in the `[RAW]` comment.
+
+## Attachment Link Rewrite Rules
+
+For each local or Backlog attachment reference:
+
+- If a Jira URL exists, use `[filename](<jiraUrl>)`.
+- If it is an image and a Jira URL exists, use `![filename](<jiraUrl>)`.
+- If the Jira URL is missing but the uploaded Jira filename is known, use `Attachment: <jiraFilename>`.
+- If mapping is uncertain, use `Attachment: <originalFilename> (uploaded mapping uncertain; see attachment audit table)`.
+
+Never keep local paths like `/tmp/...`, absolute workspace paths, or `attachments/foo.png` in Jira comments.
+
 ## Final Response To User
 
 Return:
@@ -179,5 +236,7 @@ Return:
 - Jira issue key/link.
 - Source Backlog issue key/link.
 - Uploaded files.
+- Attachment mapping table.
 - Comment sections created.
-- Warnings, including uninspected images, skipped attachments, unmatched placement, or missing Jira attachment URLs.
+- Partial failures, if any.
+- Warnings, including duplicate candidates, uninspected images, skipped attachments, unmatched placement, missing Jira attachment URLs, or uncertain attachment mappings.
