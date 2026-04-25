@@ -28,6 +28,10 @@
   - Tool documentation matching the schema.
 - Modify: `README.md`
   - Add feature list entry and MCP tool section.
+- Create: `docs/prompts/backlog_issue_summary.md`
+  - Agent-facing prompt template for summarizing an exported Backlog issue bundle.
+- Optional create after tool verification: `~/.agents/skills/backlog-issue-summarizer/SKILL.md`
+  - Local agent skill that codifies the repeatable Backlog issue summary workflow.
 
 ## Behavioral Decisions
 
@@ -42,6 +46,7 @@
   - Extract `.txt`, `.md`, `.json`, `.csv`, `.tsv`, `.log`, `.xml`, `.yaml`, `.yml`.
   - Embed local markdown image links for common images.
   - Do not parse PDF/DOCX/XLSX/OCR in this first tool; record them as downloaded but not extracted.
+- Phase 2 prompt template and skill come after the MCP tool passes typecheck/tests. The prompt/skill should orchestrate the agent workflow, not add LLM behavior into the MCP server.
 
 ---
 
@@ -1164,8 +1169,248 @@ Expected: commit succeeds after tests pass.
 
 ---
 
+### Task 8: Add Agent Summary Prompt Template
+
+**Files:**
+- Create: `docs/prompts/backlog_issue_summary.md`
+- Modify: `README.md`
+
+- [ ] **Step 1: Create prompt template directory**
+
+Run:
+
+```bash
+mkdir -p docs/prompts
+```
+
+- [ ] **Step 2: Create the summary prompt template**
+
+Create `docs/prompts/backlog_issue_summary.md`:
+
+```md
+# Backlog Issue Summary Prompt Template
+
+Use this prompt after `backlog_export_issue_context` has produced `raw.md` and `manifest.json`.
+
+## Prompt
+
+You are analyzing a Backlog issue context export.
+
+Inputs:
+
+- Raw Markdown: `<RAW_MD_PATH>`
+- Manifest JSON: `<MANIFEST_JSON_PATH>`
+- User goal: `<USER_GOAL>`
+
+Read `raw.md` and `manifest.json` first. Treat `raw.md` as the source of truth for issue description, comments, changelog, attachment list, and extracted attachment text. Treat `manifest.json` as the source of truth for attachment placement confidence.
+
+If image attachments are present and the current environment supports image reading or OCR, inspect the image files referenced in the manifest. If image reading is not available, explicitly list those images as uninspected.
+
+Use source-code tools only when the issue content suggests implementation impact or the user asks for code-aware analysis:
+
+- Use GitNexus for execution-flow, symbol, or impact analysis.
+- Use Serena for precise symbol/file lookup.
+- Do not guess file paths when code search tools return no evidence.
+
+Return the summary in this format:
+
+```md
+# Summary — <ISSUE_KEY>
+
+## Mục Tiêu
+One short paragraph describing the real goal of the task.
+
+## Bối Cảnh
+- Key facts from the issue description.
+- Key facts from comments.
+- Key facts from attachments.
+
+## Nội Dung Cần Làm
+1. Concrete implementation requirement.
+2. Concrete implementation requirement.
+3. Concrete implementation requirement.
+
+## Acceptance Criteria Suy Luận
+- Verifiable expected behavior.
+- Verifiable expected behavior.
+
+## Comment Và Attachment Quan Trọng
+- Comment #<id>: why it matters.
+- Attachment `<name>`: what useful information it contains.
+- For inferred/unmatched attachment placement, mention the confidence.
+
+## Source Code Có Thể Liên Quan
+- `path/or/symbol`: reason this is likely relevant.
+- If no code was inspected, write: "Chưa đọc source code; chưa có đủ tín hiệu từ task hoặc user chưa yêu cầu."
+
+## Rủi Ro / Điểm Cần Xác Nhận
+- Open question.
+- Ambiguous requirement.
+```
+
+Rules:
+
+- Do not invent requirements that are not supported by the issue, comments, attachments, or inspected source code.
+- Distinguish confirmed facts from inference.
+- Mention skipped, unreadable, or uninspected attachments.
+- Keep the final answer actionable for an engineer who will implement the task.
+```
+
+- [ ] **Step 3: Add README reference**
+
+Add a short section to `README.md` near the MCP tool list:
+
+```md
+## Agent Summary Prompt
+
+After exporting an issue with `backlog_export_issue_context`, use `docs/prompts/backlog_issue_summary.md` as the agent prompt template for summarizing task intent, comments, attachments, inferred acceptance criteria, and optional code context.
+```
+
+- [ ] **Step 4: Verify docs are present**
+
+Run:
+
+```bash
+test -f docs/prompts/backlog_issue_summary.md
+```
+
+Expected: command exits successfully.
+
+---
+
+### Task 9: Decide and Draft Optional Agent Skill
+
+**Files:**
+- Optional create outside this repo after Task 7 passes: `~/.agents/skills/backlog-issue-summarizer/SKILL.md`
+- Optional create outside this repo: `~/.agents/skills/backlog-issue-summarizer/references/backlog_issue_summary.md`
+
+- [ ] **Step 1: Decision gate**
+
+Create the skill only if at least one of these is true:
+
+- The workflow will be reused often with prompts like "đọc task Backlog rồi summary".
+- Multiple agents/users need consistent output.
+- The workflow should automatically call `backlog_export_issue_context` before summarizing.
+- The workflow should consistently decide when to use GitNexus/Serena.
+
+Do not create the skill if this is a one-off workflow; the prompt template is enough.
+
+- [ ] **Step 2: Recommended decision**
+
+For this project, create the skill after `backlog_export_issue_context` is implemented and verified. Reason: the workflow spans multiple tools, has important caveats around attachment placement, and benefits from a stable output format.
+
+- [ ] **Step 3: Draft skill**
+
+Create `~/.agents/skills/backlog-issue-summarizer/SKILL.md`:
+
+```md
+---
+name: backlog-issue-summarizer
+description: Use this whenever the user asks to read, analyze, summarize, clarify, or plan work from a Backlog issue/task, especially prompts like "đọc task Backlog", "summary task BLG-123", "phân tích comment/attachment", or "nội dung cần làm từ Backlog". This skill exports the issue context first, then summarizes issue description, comments, attachments, inferred acceptance criteria, and optional source-code context using GitNexus/Serena when useful.
+---
+
+# Backlog Issue Summarizer
+
+Use this skill to turn one Backlog issue into an engineer-ready task summary.
+
+## Workflow
+
+1. Identify the Backlog issue key or numeric issue ID from the user prompt.
+2. Call `backlog_export_issue_context` with:
+
+```json
+{
+  "issueIdOrKey": "<ISSUE_KEY>",
+  "includeComments": true,
+  "includeAttachments": true,
+  "downloadAttachments": true,
+  "extractReadableFiles": true
+}
+```
+
+3. Read the generated `raw.md` and `manifest.json`.
+4. Inspect image attachments if the environment supports image reading. If not, list them as uninspected.
+5. Use GitNexus/Serena only when:
+   - the user asks for implementation guidance,
+   - the issue mentions concrete modules, APIs, symbols, endpoints, or error messages,
+   - the issue is ambiguous and code context can reduce uncertainty.
+6. Produce the report using the required output structure.
+
+## Attachment Placement
+
+Respect placement confidence from `manifest.json`:
+
+- `exact`: safe to associate with the description/comment.
+- `inferred`: useful but mention it is inferred by uploader/time.
+- `unmatched`: do not attach it to a specific comment; summarize it under general attachments.
+
+## Required Output Structure
+
+```md
+# Summary — <ISSUE_KEY>
+
+## Mục Tiêu
+
+## Bối Cảnh
+
+## Nội Dung Cần Làm
+
+## Acceptance Criteria Suy Luận
+
+## Comment Và Attachment Quan Trọng
+
+## Source Code Có Thể Liên Quan
+
+## Rủi Ro / Điểm Cần Xác Nhận
+```
+
+## Rules
+
+- Do not summarize before reading `raw.md`.
+- Do not invent requirements.
+- Separate confirmed facts from inference.
+- Mention unreadable, skipped, or uninspected attachments.
+- Keep the answer actionable for implementation.
+```
+
+- [ ] **Step 4: Add skill eval prompts if creating the skill**
+
+Create `~/.agents/skills/backlog-issue-summarizer/evals/evals.json`:
+
+```json
+{
+  "skill_name": "backlog-issue-summarizer",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Đọc task Backlog BLG-10474 rồi summary nội dung cần làm, bao gồm comment và attachment.",
+      "expected_output": "The agent exports the issue context first, reads raw.md and manifest.json, then returns the required Vietnamese summary sections.",
+      "files": []
+    },
+    {
+      "id": 2,
+      "prompt": "Phân tích BLG-20001 và cho tôi biết source code nào có thể liên quan.",
+      "expected_output": "The agent exports context, reads the bundle, uses GitNexus or Serena only when issue content suggests code targets, and separates confirmed facts from source-code inference.",
+      "files": []
+    }
+  ]
+}
+```
+
+- [ ] **Step 5: Verify skill scope**
+
+Before using the skill broadly, run at least two manual prompts and check:
+
+- It always calls `backlog_export_issue_context` first.
+- It mentions attachment placement confidence.
+- It does not claim image/PDF contents were read unless they were actually inspected or extracted.
+- It does not call GitNexus/Serena when issue content has no code signal.
+
+---
+
 ## Self-Review
 
 - Spec coverage: The plan covers issue fetch, full comment pagination, attachment metadata, attachment download, raw markdown, manifest, placement confidence, docs, README, and tests.
+- Prompt/skill coverage: The plan adds a reusable prompt template and a gated skill decision after the MCP tool is verified.
 - Placeholder scan: No implementation steps rely on TBD/TODO language; unsupported PDF/OCR is explicitly out of scope for this deterministic MCP tool.
 - Type consistency: The plan uses existing domain types `BacklogIssue`, `BacklogComment`, and `BacklogAttachment`; new helper names are defined before use.

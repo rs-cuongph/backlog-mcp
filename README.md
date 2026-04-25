@@ -64,6 +64,10 @@ The server will be available at:
 - **MCP endpoint:** `http://localhost:3100/mcp`
 - **Health check:** `http://localhost:3100/health`
 
+## Agent Summary Prompt
+
+After exporting an issue with `backlog_export_issue_context`, use `docs/prompts/backlog_issue_summary.md` as the agent prompt template for summarizing task intent, comments, attachments, inferred acceptance criteria, and optional code context.
+
 ## MCP Tools
 
 ### `backlog_get_issue_list`
