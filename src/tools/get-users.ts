@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { BacklogHttpClient } from "../backlog/http-client.js";
 import { isMcpError } from "../errors.js";
+import { navigationHint } from "../utils.js";
 import type { Config } from "../config.js";
 import type { BacklogUser } from "../types.js";
 
@@ -105,8 +106,11 @@ function formatUsers(
     );
   }
 
-  lines.push(``);
-  lines.push(`> Use the **ID** column value as \`assigneeId\` in \`backlog_get_issue_list\`.`);
+  const exampleUserId = users[0].id;
+  lines.push(navigationHint([
+    `\`backlog_get_issue_list(projectIdOrKey: "${projectIdOrKey}", assigneeId: [${exampleUserId}])\` — filter issues assigned to the first user`,
+    `\`backlog_get_issue_list(projectIdOrKey: "${projectIdOrKey}")\` — browse all issues in this project`,
+  ]));
 
   return lines.join("\n");
 }

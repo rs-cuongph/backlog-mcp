@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { BacklogHttpClient } from "../backlog/http-client.js";
 import { isMcpError } from "../errors.js";
+import { navigationHint } from "../utils.js";
 import type { Config } from "../config.js";
 import type { BacklogAttachment } from "../types.js";
 
@@ -77,8 +78,11 @@ function formatAttachments(attachments: BacklogAttachment[], issueIdOrKey: strin
     lines.push(`| ${a.id} | ${a.name} | ${a.sizeFormatted} | ${uploadedBy} | ${created} |`);
   }
 
-  lines.push(``);
-  lines.push(`> Use **ID** with \`backlog_download_attachment\` to download a file.`);
+  const exampleId = attachments[0].id;
+  lines.push(navigationHint([
+    `\`backlog_download_attachment(issueIdOrKey: "${issueIdOrKey}", attachmentId: ${exampleId})\` — download the first file`,
+    `\`backlog_export_issue_context(issueIdOrKey: "${issueIdOrKey}")\` — export full issue bundle (all attachments + comments)`,
+  ]));
 
   return lines.join("\n");
 }

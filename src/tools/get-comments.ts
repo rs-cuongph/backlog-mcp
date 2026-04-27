@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { BacklogHttpClient } from "../backlog/http-client.js";
 import { isMcpError } from "../errors.js";
-import { formatDate } from "../utils.js";
+import { formatDate, navigationHint } from "../utils.js";
 import type { Config } from "../config.js";
 import type { BacklogComment } from "../types.js";
 
@@ -70,7 +70,7 @@ export async function handleGetComments(
     });
 
     return {
-      content: [{ type: "text", text: formatComments(issueIdOrKey, comments, order) }],
+      content: [{ type: "text", text: formatComments(issueIdOrKey, comments, order, count) }],
     };
   } catch (err: unknown) {
     if (isMcpError(err)) return errorContent(`[${err.code}] ${err.message}`);
@@ -86,7 +86,8 @@ export async function handleGetComments(
 function formatComments(
   issueIdOrKey: string,
   comments: BacklogComment[],
-  order: string
+  order: string,
+  count: number
 ): string {
   const lines: string[] = [];
 
@@ -131,6 +132,21 @@ function formatComments(
       lines.push(``);
     }
   }
+
+  // Navigation hints
+  const hints: string[] = [
+    `\`backlog_get_issue(issueIdOrKey: "${issueIdOrKey}")\` — go back to issue overview`,
+  ];
+  if (comments.length === count) {
+    if (order === "desc") {
+      const oldestId = comments[comments.length - 1].id;
+      hints.push(`\`backlog_get_comments(issueIdOrKey: "${issueIdOrKey}", order: "desc", maxId: ${oldestId - 1})\` — load older comments`);
+    } else {
+      const newestId = comments[comments.length - 1].id;
+      hints.push(`\`backlog_get_comments(issueIdOrKey: "${issueIdOrKey}", order: "asc", minId: ${newestId + 1})\` — load newer comments`);
+    }
+  }
+  lines.push(navigationHint(hints));
 
   return lines.join("\n");
 }

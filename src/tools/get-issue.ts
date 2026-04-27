@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { BacklogHttpClient } from "../backlog/http-client.js";
 import { isMcpError } from "../errors.js";
-import { formatDate, formatHours } from "../utils.js";
+import { formatDate, formatHours, navigationHint } from "../utils.js";
 import type { Config } from "../config.js";
 import type { BacklogIssue } from "../types.js";
 
@@ -123,6 +123,13 @@ function formatIssue(issue: BacklogIssue): string {
   lines.push(`## Description`);
   lines.push(``);
   lines.push(issue.description ?? "_No description provided._");
+
+  // ── Navigation hints ─────────────────────────────────────────────────────
+  lines.push(navigationHint([
+    `\`backlog_get_comments(issueIdOrKey: "${issue.issueKey}")\` — read discussion & change history`,
+    `\`backlog_get_attachments(issueIdOrKey: "${issue.issueKey}")\` — list attached files`,
+    `\`backlog_export_issue_context(issueIdOrKey: "${issue.issueKey}")\` — export full context bundle (comments + attachments)`,
+  ]));
 
   return lines.join("\n");
 }

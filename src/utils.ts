@@ -96,3 +96,26 @@ export function isMarkdownImageFile(filename: string): boolean {
 export function normalizeWhitespaceForMatch(value: string): string {
   return value.toLowerCase().replace(/\s+/g, " ").trim();
 }
+
+// ---------------------------------------------------------------------------
+// Navigation hints
+// ---------------------------------------------------------------------------
+
+/**
+ * Renders a navigation hint block appended to the end of tool output.
+ * Helps LLMs know which tool to call next for agentic chaining.
+ *
+ * @param hints - Each entry is one suggested next action (plain text or inline code)
+ * @returns A formatted markdown block, or empty string if no hints provided
+ *
+ * @example
+ * navigationHint([
+ *   "`backlog_get_comments(issueIdOrKey: \"BLG-123\")` — read discussion",
+ *   "`backlog_get_attachments(issueIdOrKey: \"BLG-123\")` — list files",
+ * ])
+ */
+export function navigationHint(hints: string[]): string {
+  if (hints.length === 0) return "";
+  const lines = hints.map((h) => `- ${h}`);
+  return `\n\n---\n💡 **Next:**\n${lines.join("\n")}`;
+}

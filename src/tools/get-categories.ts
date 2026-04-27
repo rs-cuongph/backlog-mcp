@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { BacklogHttpClient } from "../backlog/http-client.js";
 import { isMcpError } from "../errors.js";
+import { navigationHint } from "../utils.js";
 import type { Config } from "../config.js";
 import type { BacklogCategory } from "../types.js";
 
@@ -62,6 +63,11 @@ function formatCategories(projectIdOrKey: string, categories: BacklogCategory[])
   for (const c of categories) {
     lines.push(`| ${c.id} | ${c.name} |`);
   }
+
+  const exampleId = categories[0].id;
+  lines.push(navigationHint([
+    `\`backlog_get_issue_list(projectIdOrKey: "${projectIdOrKey}", categoryId: [${exampleId}])\` — filter issues by the first category`,
+  ]));
 
   return lines.join("\n");
 }

@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { BacklogHttpClient } from "../backlog/http-client.js";
 import { isMcpError } from "../errors.js";
-import { formatDate, formatHours } from "../utils.js";
+import { formatDate, formatHours, navigationHint } from "../utils.js";
 import type { Config } from "../config.js";
 import type { BacklogIssueSummary } from "../types.js";
 
@@ -194,7 +194,7 @@ export async function handleGetIssueList(
       order,
     });
 
-    return { content: [{ type: "text", text: formatIssueList(issues, offset ?? 0) }] };
+    return { content: [{ type: "text", text: formatIssueList(issues, offset ?? 0, count) }] };
   } catch (err: unknown) {
     if (isMcpError(err)) return errorContent(`[${err.code}] ${err.message}`);
     if (err instanceof Error) return errorContent(err.message);
@@ -206,7 +206,7 @@ export async function handleGetIssueList(
 // Formatting
 // ---------------------------------------------------------------------------
 
-function formatIssueList(issues: BacklogIssueSummary[], offset: number): string {
+function formatIssueList(issues: BacklogIssueSummary[], offset: number, count: number): string {
   const lines: string[] = [];
 
   lines.push(`# Backlog Issue List`);
@@ -255,6 +255,20 @@ function formatIssueList(issues: BacklogIssueSummary[], offset: number): string 
     }
     lines.push(`- **Created:** ${formatDate(issue.created)} | **Updated:** ${formatDate(issue.updated)}`);
     lines.push(``);
+  }
+
+  // Navigation hints
+  const hints: string[] = [];
+  if (issues.length > 0) {
+    const firstKey = issues[0].issueKey;
+    hints.push(`\`backlog_get_issue(issueIdOrKey: "${firstKey}")\` — view full details of the first issue`);
+  }
+  if (issues.length === count) {
+    const nextOffset = offset + count;
+    hints.push(`\`backlog_get_issue_list(offset: ${nextOffset})\` — load the next page (${count} more results possible)`);
+  }
+  if (hints.length > 0) {
+    lines.push(navigationHint(hints));
   }
 
   return lines.join("\n");

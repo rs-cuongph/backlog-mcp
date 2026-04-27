@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { BacklogHttpClient } from "../backlog/http-client.js";
 import { isMcpError } from "../errors.js";
+import { navigationHint } from "../utils.js";
 import type { Config } from "../config.js";
 import type { BacklogPriority } from "../types.js";
 
@@ -60,6 +61,12 @@ function formatPriorities(priorities: BacklogPriority[]): string {
   for (const p of priorities) {
     lines.push(`| ${p.id} | ${p.name} |`);
   }
+
+  const exampleId = priorities[0].id;
+  lines.push(navigationHint([
+    `\`backlog_get_issue_list(priorityId: [${exampleId}])\` — filter issues by the first priority (add \`projectIdOrKey\` to scope by project)`,
+    `\`backlog_get_projects()\` — list projects to use with issue filtering`,
+  ]));
 
   return lines.join("\n");
 }

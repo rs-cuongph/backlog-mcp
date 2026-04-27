@@ -4,6 +4,7 @@ import * as path from "node:path";
 import { BacklogHttpClient } from "../backlog/http-client.js";
 import { isMcpError } from "../errors.js";
 import { formatFileSize } from "../backlog/mappers.js";
+import { navigationHint } from "../utils.js";
 import type { Config } from "../config.js";
 
 // ---------------------------------------------------------------------------
@@ -67,6 +68,10 @@ export async function handleDownloadAttachment(
       `**Saved to:** ${absolutePath}`,
       `**Issue:** ${issueIdOrKey}`,
       `**Attachment ID:** ${attachmentId}`,
+      navigationHint([
+        `\`backlog_get_attachments(issueIdOrKey: "${issueIdOrKey}")\` — view all attachments on this issue`,
+        `\`backlog_get_issue(issueIdOrKey: "${issueIdOrKey}")\` — go back to issue overview`,
+      ]),
     ].join("\n");
 
     return { content: [{ type: "text", text }] };

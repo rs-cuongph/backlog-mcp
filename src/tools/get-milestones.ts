@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { BacklogHttpClient } from "../backlog/http-client.js";
 import { isMcpError } from "../errors.js";
+import { navigationHint } from "../utils.js";
 import type { Config } from "../config.js";
 import type { BacklogMilestone } from "../types.js";
 
@@ -85,6 +86,11 @@ function formatMilestones(
     const arc = m.archived ? "✓" : "";
     lines.push(`| ${m.id} | ${m.name} | ${start} | ${due} | ${arc} |`);
   }
+
+  const exampleId = milestones[0].id;
+  lines.push(navigationHint([
+    `\`backlog_get_issue_list(projectIdOrKey: "${projectIdOrKey}", milestoneId: [${exampleId}])\` — filter issues by the first milestone`,
+  ]));
 
   return lines.join("\n");
 }

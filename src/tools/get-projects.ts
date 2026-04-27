@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { BacklogHttpClient } from "../backlog/http-client.js";
 import { isMcpError } from "../errors.js";
+import { navigationHint } from "../utils.js";
 import type { Config } from "../config.js";
 import type { BacklogProject } from "../types.js";
 
@@ -71,6 +72,13 @@ function formatProjects(projects: BacklogProject[], archived: boolean | undefine
     const arc = p.archived ? "✓" : "";
     lines.push(`| ${p.id} | ${p.projectKey} | ${p.name} | ${arc} |`);
   }
+
+  const exampleKey = projects[0].projectKey;
+  lines.push(navigationHint([
+    `\`backlog_get_issue_list(projectIdOrKey: "${exampleKey}")\` — browse issues in this project`,
+    `\`backlog_get_users(projectIdOrKey: "${exampleKey}")\` — list project members`,
+    `\`backlog_get_statuses(projectIdOrKey: "${exampleKey}")\` — get available statuses for filtering`,
+  ]));
 
   return lines.join("\n");
 }
