@@ -207,4 +207,90 @@ describe("handleExportIssueContext", () => {
     );
     expect(String(manifestCall?.[1])).toContain("exceeds maxAttachmentBytes");
   });
+
+  it("includes all metadata fields in raw.md", async () => {
+    await handleExportIssueContext({ issueIdOrKey: "BLG-10474" }, MOCK_CFG);
+
+    const rawCall = (fsMock.writeFile as ReturnType<typeof vi.fn>).mock.calls.find((call) =>
+      String(call[0]).endsWith("raw.md")
+    );
+    const rawContent = String(rawCall?.[1]);
+    expect(rawContent).toContain("**Type:** Task");
+    expect(rawContent).toContain("**Resolution:** —");
+    expect(rawContent).toContain("**Categories:** Payment");
+    expect(rawContent).toContain("**Milestones:** Sprint 12");
+    expect(rawContent).toContain("**Versions:** —");
+    expect(rawContent).toContain("**Due Date:** 2026-04-30");
+    expect(rawContent).toContain("**Start Date:** —");
+    expect(rawContent).toContain("**Estimated:** —");
+    expect(rawContent).toContain("**Actual:** —");
+    expect(rawContent).toContain("**Parent:** —");
+  });
+
+  it("skips changelog-only comments when skipChangelogOnlyComments is true", async () => {
+    const commentsWithChangelog = [
+      {
+        id: 1,
+        author: "Alice",
+        content: "This is a real comment with text",
+        created: "2026-04-21T10:00:00Z",
+        updated: "2026-04-21T10:00:00Z",
+        changeLog: [],
+      },
+      {
+        id: 2,
+        author: "Bob",
+        content: null,
+        created: "2026-04-22T08:00:00Z",
+        updated: "2026-04-22T08:00:00Z",
+        changeLog: [{ field: "status", originalValue: "Open", newValue: "InProgress" }],
+      },
+      {
+        id: 3,
+        author: "Carol",
+        content: "   ",
+        created: "2026-04-22T09:00:00Z",
+        updated: "2026-04-22T09:00:00Z",
+        changeLog: [{ field: "assignee", originalValue: null, newValue: "Alice" }],
+      },
+    ];
+    (BacklogHttpClient.prototype.getComments as ReturnType<typeof vi.fn>).mockResolvedValue(
+      commentsWithChangelog
+    );
+
+    await handleExportIssueContext(
+      { issueIdOrKey: "BLG-10474", skipChangelogOnlyComments: true },
+      MOCK_CFG
+    );
+
+    const rawCall = (fsMock.writeFile as ReturnType<typeof vi.fn>).mock.calls.find((call) =>
+      String(call[0]).endsWith("raw.md")
+    );
+    const rawContent = String(rawCall?.[1]);
+    expect(rawContent).toContain("Comment #1");
+    expect(rawContent).not.toContain("Comment #2");
+    expect(rawContent).not.toContain("Comment #3");
+  });
+
+  it("uses file extension for syntax highlighting in extracted content", async () => {
+    (BacklogHttpClient.prototype.getIssueAttachments as ReturnType<typeof vi.fn>).mockResolvedValue([
+      { id: 20, name: "config.json", size: 30, sizeFormatted: "30 B", uploadedBy: "Alice", created: "2026-04-21T10:01:00Z" },
+    ]);
+    (BacklogHttpClient.prototype.downloadAttachment as ReturnType<typeof vi.fn>).mockResolvedValue({
+      data: Buffer.from('{"key": "value"}'),
+      filename: "config.json",
+    });
+
+    await handleExportIssueContext(
+      { issueIdOrKey: "BLG-10474", extractReadableFiles: true },
+      MOCK_CFG
+    );
+
+    const rawCall = (fsMock.writeFile as ReturnType<typeof vi.fn>).mock.calls.find((call) =>
+      String(call[0]).endsWith("raw.md")
+    );
+    const rawContent = String(rawCall?.[1]);
+    expect(rawContent).toContain("```json");
+    expect(rawContent).not.toContain("```text");
+  });
 });

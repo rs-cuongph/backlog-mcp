@@ -64,6 +64,13 @@ export const exportIssueContextSchema = z.object({
     .optional()
     .default(DEFAULT_PLACEMENT_WINDOW_MINUTES)
     .describe("Time window (minutes) for inferred comment attachment placement. Default: 10."),
+  skipChangelogOnlyComments: z
+    .boolean()
+    .optional()
+    .default(false)
+    .describe(
+      "Skip comments that have no text content (only field changes). Useful for translation/export workflows. Default: false."
+    ),
 });
 
 export type ExportIssueContextInput = z.infer<typeof exportIssueContextSchema>;
@@ -129,7 +136,12 @@ export async function handleExportIssueContext(
       placementWindowMinutes: input.placementWindowMinutes,
     });
 
-    const rawMarkdown = formatRawMarkdown(issue, comments, exportedAttachments);
+    const rawMarkdown = formatRawMarkdown(
+      issue,
+      comments,
+      exportedAttachments,
+      input.skipChangelogOnlyComments
+    );
     const manifest = formatManifest(issue, comments, exportedAttachments);
     const rawPath = path.join(exportDir, "raw.md");
     const manifestPath = path.join(exportDir, "manifest.json");
@@ -329,19 +341,42 @@ function inferAttachmentComment(
 function formatRawMarkdown(
   issue: BacklogIssue,
   comments: BacklogComment[],
-  attachments: ExportedAttachment[]
+  attachments: ExportedAttachment[],
+  skipChangelogOnly = false
 ): string {
   const lines: string[] = [];
 
   lines.push(`# [${issue.issueKey}] ${issue.summary}`);
   lines.push("");
   lines.push(`**URL:** ${issue.url}`);
+  lines.push(`**Type:** ${issue.issueType}`);
   lines.push(`**Status:** ${issue.status}`);
+  lines.push(`**Resolution:** ${issue.resolution ?? "—"}`);
   lines.push(`**Priority:** ${issue.priority ?? "—"}`);
+  lines.push(
+    `**Parent:** ${issue.parentIssueId != null ? `#${issue.parentIssueId}` : "—"}`
+  );
   lines.push(`**Assignee:** ${issue.assignee ?? "Unassigned"}`);
   lines.push(`**Reporter:** ${issue.reporter ?? "—"}`);
+  lines.push(
+    `**Categories:** ${issue.categories.length > 0 ? issue.categories.join(", ") : "—"}`
+  );
+  lines.push(
+    `**Milestones:** ${issue.milestones.length > 0 ? issue.milestones.join(", ") : "—"}`
+  );
+  lines.push(
+    `**Versions:** ${issue.versions.length > 0 ? issue.versions.join(", ") : "—"}`
+  );
   lines.push(`**Created:** ${formatDate(issue.created)}`);
   lines.push(`**Updated:** ${formatDate(issue.updated)}`);
+  lines.push(`**Start Date:** ${issue.startDate ?? "—"}`);
+  lines.push(`**Due Date:** ${issue.dueDate ?? "—"}`);
+  lines.push(
+    `**Estimated:** ${issue.estimatedHours != null ? `${issue.estimatedHours}h` : "—"}`
+  );
+  lines.push(
+    `**Actual:** ${issue.actualHours != null ? `${issue.actualHours}h` : "—"}`
+  );
   lines.push("");
   lines.push("## Description");
   lines.push("");
@@ -360,11 +395,15 @@ function formatRawMarkdown(
   lines.push("");
   lines.push("## Comments Timeline");
   lines.push("");
-  if (comments.length === 0) {
+  const visibleComments = skipChangelogOnly
+    ? comments.filter((c) => c.content != null && c.content.trim().length > 0)
+    : comments;
+
+  if (visibleComments.length === 0) {
     lines.push("_No comments exported._");
   }
 
-  for (const comment of comments) {
+  for (const comment of visibleComments) {
     lines.push(
       `### Comment #${comment.id} — ${comment.author ?? "Unknown"} — ${formatDate(comment.created)}`
     );
@@ -387,9 +426,12 @@ function formatRawMarkdown(
     lines.push("_No readable attachment content extracted._");
   }
   for (const item of extracted) {
+    const ext = item.attachment.name.includes(".")
+      ? item.attachment.name.split(".").pop()!
+      : "text";
     lines.push(`### ${item.attachment.name}`);
     lines.push("");
-    lines.push("```text");
+    lines.push(`\`\`\`${ext}`);
     lines.push(item.extractedText ?? "");
     lines.push("```");
     lines.push("");
