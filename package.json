@@ -1,6 +1,6 @@
 {
   "name": "@cuongph.dev/backlog-mcp",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "description": "MCP server for Backlog (Nulab) — read issues, comments, attachments via API Key",
   "repository": {
     "type": "git",
@@ -22,6 +22,8 @@
     "dist/backlog",
     "dist/tools",
     "dist/types",
+    "dist/bootstrap.js",
+    "dist/bootstrap.d.ts",
     "dist/config.js",
     "dist/config.d.ts",
     "dist/errors.js",
