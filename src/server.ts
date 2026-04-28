@@ -392,7 +392,7 @@ EXAMPLE: { issueIdOrKey: "BLG-123", attachmentId: 42 }`,
     `Export a Backlog issue into a local raw context bundle for LLM summarization.
 
 Fetches issue details, all comments (paginated), attachment metadata, downloads files, and writes:
-- raw.md: full markdown context ordered for reading (description → issue attachments → comments → extracted text)
+- raw.md: full markdown context with complete metadata (type, status, resolution, priority, parent, assignee, reporter, categories, milestones, versions, dates, hours), description, attachments, comments, and extracted text
 - manifest.json: machine-readable export metadata with placement confidence per attachment
 
 Attachment placement is exact only when issue/comment text references the attachment; otherwise inferred by uploader/time or left unmatched.
@@ -403,6 +403,7 @@ INPUT:
 - outputDir (optional): override export root directory
 - includeComments/includeAttachments/downloadAttachments (optional booleans, default: true)
 - extractReadableFiles (optional boolean, default: false)
+- skipChangelogOnlyComments (optional boolean, default: false) — skip comments with no text (only field changes)
 - maxAttachmentBytes (optional): skip files larger than this (default: 10485760 = 10 MB)
 - placementWindowMinutes (optional): time window for inferred comment placement (default: 10)
 
@@ -445,6 +446,12 @@ EXAMPLE: { issueIdOrKey: "BLG-10474" }`,
         .max(1440)
         .optional()
         .describe("Time window (minutes) for inferred comment attachment placement. Default: 10."),
+      skipChangelogOnlyComments: z
+        .boolean()
+        .optional()
+        .describe(
+          "Skip comments that have no text content (only field changes). Useful for translation/export workflows. Default: false."
+        ),
     },
     async (input) => {
       return handleExportIssueContext(input, config);

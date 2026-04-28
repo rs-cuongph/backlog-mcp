@@ -21,7 +21,7 @@ The tool does **not** call an LLM. It exports deterministic raw material for a l
 | `includeComments` | `boolean` | No | `true` | Fetch and include all comments |
 | `includeAttachments` | `boolean` | No | `true` | Fetch and include attachment metadata |
 | `downloadAttachments` | `boolean` | No | `true` | Download attachment files |
-| `extractReadableFiles` | `boolean` | No | `true` | Extract text-like files into markdown |
+| `extractReadableFiles` | `boolean` | No | `false` | Extract text-like files into markdown |
 | `maxAttachmentBytes` | `number` | No | `10485760` | Skip downloading files larger than this (bytes) |
 | `placementWindowMinutes` | `number` | No | `10` | Window (minutes) for inferred comment-level attachment placement |
 | `skipChangelogOnlyComments` | `boolean` | No | `false` | Skip comments that have no text content (only field changes). Useful for translation/export workflows. |
